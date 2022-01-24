@@ -30,9 +30,7 @@ def demo(args):
 
     # Model and version
     net = importlib.import_module('model.'+args.model)
-    model = net.InpaintGenerator(args)
-    model.load_state_dict(torch.load(args.pre_train, map_location='cpu'))
-    model.eval()
+    model = net.InpaintGenerator.from_pretrained(args.pre_train)
 
     for fn in img_list:
         filename = os.path.basename(fn).split('.')[0]

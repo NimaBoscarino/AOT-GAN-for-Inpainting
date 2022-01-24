@@ -2,10 +2,25 @@
 import torch 
 import torch.nn as nn 
 
+import transformers
 
-class BaseNetwork(nn.Module):
-    def __init__(self):
-        super(BaseNetwork, self).__init__()
+class BaseNetworkConfig(transformers.PretrainedConfig):
+    def __init__(
+        self,
+        use_cache=True,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        self.use_cache = use_cache
+
+
+class BaseNetwork(transformers.PreTrainedModel):
+    config_class = BaseNetworkConfig
+    base_model_prefix = "aotgan-common"
+    
+    def __init__(self, config, *model_args, **model_kwargs):
+        super(BaseNetwork, self).__init__(config)
 
     def print_network(self):
         if isinstance(self, list):
@@ -16,7 +31,7 @@ class BaseNetwork(nn.Module):
         print('Network [%s] was created. Total number of parameters: %.1f million. '
               'To see the architecture, do print(network).' % (type(self).__name__, num_params / 1000000))
 
-    def init_weights(self, init_type='normal', gain=0.02):
+    def _init_weights(self, init_type='normal', gain=0.02):
         '''
         initialize network's weights
         init_type: normal | xavier | kaiming | orthogonal

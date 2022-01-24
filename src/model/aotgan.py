@@ -5,10 +5,30 @@ from torch.nn.utils import spectral_norm
 
 from .common import BaseNetwork
 
+import transformers
+
+
+class InpaintGeneratorConfig(transformers.PretrainedConfig):
+    def __init__(
+        self,
+        use_cache=True,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        self.use_cache = use_cache
+        self.rates = [1, 2, 4, 8]
+        self.block_num = 8
+
 
 class InpaintGenerator(BaseNetwork):
-    def __init__(self, args):  # 1046
-        super(InpaintGenerator, self).__init__()
+    config_class = InpaintGeneratorConfig
+    base_model_prefix = "aotgan-inpaint"
+
+    def __init__(self, config, *model_args, **model_kwargs):
+        super(InpaintGenerator, self).__init__(config)
+
+        self.config = config
 
         self.encoder = nn.Sequential(
             nn.ReflectionPad2d(3),
@@ -20,7 +40,7 @@ class InpaintGenerator(BaseNetwork):
             nn.ReLU(True)
         )
 
-        self.middle = nn.Sequential(*[AOTBlock(256, args.rates) for _ in range(args.block_num)])
+        self.middle = nn.Sequential(*[AOTBlock(256, self.config.rates) for _ in range(self.config.block_num)])
 
         self.decoder = nn.Sequential(
             UpConv(256, 128),
@@ -30,7 +50,7 @@ class InpaintGenerator(BaseNetwork):
             nn.Conv2d(64, 3, 3, stride=1, padding=1)
         )
 
-        self.init_weights()
+        self.post_init()
 
     def forward(self, x, mask):
         x = torch.cat([x, mask], dim=1)
