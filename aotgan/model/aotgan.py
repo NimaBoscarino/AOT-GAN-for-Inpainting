@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import spectral_norm
+from types import SimpleNamespace
+from huggingface_hub import hf_hub_download
 
 from .common import BaseNetwork
 
@@ -31,6 +33,14 @@ class InpaintGenerator(BaseNetwork):
         )
 
         self.init_weights()
+
+    @classmethod
+    def from_pretrained(cls, hf_model):
+        weights = hf_hub_download(repo_id=hf_model, filename="pytorch_model.bin")
+        model = cls(SimpleNamespace(rates=[1,2,4,8], block_num=8))
+        model.load_state_dict(torch.load(weights, map_location='cpu'))
+        model.eval()
+        return model
 
     def forward(self, x, mask):
         x = torch.cat([x, mask], dim=1)
